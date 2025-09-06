@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  claude-api:
+    build: .
+    container_name: claude-code-openai-api
+    ports:
+      - "${PORT:-8100}:8000"
+    environment:
+      - API_KEY=${API_KEY:-claude-local}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PORT=8000
+      - CLAUDE_CODE_PATH=/usr/bin/claude
+    env_file:
+      - .env
+    volumes:
+      # Persist all Claude authentication and config data
+      - claude_home:/home/appuser
+      # Optional: mount sessions
+      - ./sessions:/app/sessions
+    stdin_open: true  # Keep stdin open for interactive auth
+    tty: true         # Allocate a pseudo-TTY for interactive auth
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  claude_home:    # Persist entire appuser home directory with Claude auth
